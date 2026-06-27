@@ -1,0 +1,13 @@
+*.iml
+.gradle
+/.idea
+/.kotlin
+/build
+/out
+/local.properties
+/.externalNativeBuild
+/.cxx
+/app/build
+/hiddenapi/stub/build
+/hiddenapi/compat/build
+/magisk/apk/*.apk

@@ -1,0 +1,6 @@
+id=oplus_auto_dc
+name=Oplus Auto DC
+version=v0.1.0
+versionCode=1
+author=yangfentuozi
+description=daemon 等待启动；屏幕状态未知；调光：未知；刷新率：未知
