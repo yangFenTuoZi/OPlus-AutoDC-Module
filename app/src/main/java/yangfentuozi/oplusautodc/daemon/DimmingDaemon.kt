@@ -10,6 +10,7 @@ import yangfentuozi.hiddenapi.compat.PowerManagerCompat
 import yangfentuozi.hiddenapi.compat.ServiceManagerCompat
 import yangfentuozi.hiddenapi.compat.SettingsProviderClient
 import yangfentuozi.hiddenapi.compat.adapter.DisplayManagerCallbackAdapter
+import yangfentuozi.oplusautodc.BuildConfig
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -159,12 +160,13 @@ class DimmingDaemon(
             modulePropFile.parentFile?.mkdirs()
             val base = modulePropFile.takeIf { it.isFile }?.readText()?.takeIf { it.isNotBlank() }
                 ?: """
-                id=oplus_auto_dc
-                name=OPlus Auto DC
-                version=v0.1.0
-                versionCode=1
-                author=yangFenTuoZi
+                id=${BuildConfig.MAGISK_MODULE_ID}
+                name=${BuildConfig.MAGISK_MODULE_NAME}
+                version=${BuildConfig.MAGISK_MODULE_VERSION}
+                versionCode=${BuildConfig.MAGISK_MODULE_VERSION_CODE}
+                author=${BuildConfig.MAGISK_MODULE_AUTHOR}
                 description=daemon 等待启动；屏幕状态未知；调光：未知；刷新率：未知
+                updateJson=${BuildConfig.MAGISK_UPDATE_JSON_URL}
                 """.trimIndent()
             val line = "description=${
                 description.replace('\n', ' ')

@@ -27,14 +27,31 @@ mount_runtime_module_prop() {
     now="$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null)"
     description="daemon 启动；屏幕状态未知；调光：未知；刷新率：未知；等待 daemon 接管；更新：$now"
 
-    cat > "$RUNTIME_MODULE_PROP_FILE" <<EOF
+    if [ -f "$MODULE_PROP_FILE" ]; then
+        has_description=false
+        while IFS= read -r line || [ -n "$line" ]; do
+            case "$line" in
+                description=*)
+                    printf 'description=%s\n' "$description"
+                    has_description=true
+                    ;;
+                *)
+                    printf '%s\n' "$line"
+                    ;;
+            esac
+        done < "$MODULE_PROP_FILE" > "$RUNTIME_MODULE_PROP_FILE"
+        [ "$has_description" = true ] || printf 'description=%s\n' "$description" >> "$RUNTIME_MODULE_PROP_FILE"
+    else
+        cat > "$RUNTIME_MODULE_PROP_FILE" <<EOF
 id=oplus_auto_dc
 name=OPlus Auto DC
 version=v0.1.0
 versionCode=1
 author=yangFenTuoZi
 description=$description
+updateJson=https://raw.githubusercontent.com/yangFenTuoZi/OPlus-AutoDC-Module/main/update/update.json
 EOF
+    fi
     chmod 0644 "$RUNTIME_MODULE_PROP_FILE" 2>/dev/null
 
     if mount -o bind "$RUNTIME_MODULE_PROP_FILE" "$MODULE_PROP_FILE" 2>> "$BOOT_LOG_FILE"; then
