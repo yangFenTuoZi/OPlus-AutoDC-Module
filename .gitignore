@@ -3,7 +3,6 @@
 /.idea
 /.kotlin
 /build
-/out
 /local.properties
 /.externalNativeBuild
 /.cxx

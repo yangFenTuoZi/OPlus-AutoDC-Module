@@ -27,31 +27,11 @@ mount_runtime_module_prop() {
     now="$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null)"
     description="daemon 启动；屏幕状态未知；调光：未知；刷新率：未知；等待 daemon 接管；更新：$now"
 
-    if [ -f "$MODULE_PROP_FILE" ]; then
-        has_description=false
-        while IFS= read -r line || [ -n "$line" ]; do
-            case "$line" in
-                description=*)
-                    printf 'description=%s\n' "$description"
-                    has_description=true
-                    ;;
-                *)
-                    printf '%s\n' "$line"
-                    ;;
-            esac
-        done < "$MODULE_PROP_FILE" > "$RUNTIME_MODULE_PROP_FILE"
-        [ "$has_description" = true ] || printf 'description=%s\n' "$description" >> "$RUNTIME_MODULE_PROP_FILE"
-    else
-        cat > "$RUNTIME_MODULE_PROP_FILE" <<EOF
-id=oplus_auto_dc
-name=OPlus Auto DC
-version=v0.1.0
-versionCode=1
-author=yangFenTuoZi
-description=$description
-updateJson=https://raw.githubusercontent.com/yangFenTuoZi/OPlus-AutoDC-Module/main/update/update.json
-EOF
+    if ! cp -f "$MODULE_PROP_FILE" "$RUNTIME_MODULE_PROP_FILE"; then
+        log_boot "failed to copy module.prop: $MODULE_PROP_FILE -> $RUNTIME_MODULE_PROP_FILE"
+        return 1
     fi
+    sed -i "s|^description=.*|description=$description|" "$RUNTIME_MODULE_PROP_FILE"
     chmod 0644 "$RUNTIME_MODULE_PROP_FILE" 2>/dev/null
 
     if mount -o bind "$RUNTIME_MODULE_PROP_FILE" "$MODULE_PROP_FILE" 2>> "$BOOT_LOG_FILE"; then
@@ -102,5 +82,6 @@ until [ "$(getprop sys.boot_completed 2>/dev/null)" = "1" ]; do
     sleep 1
 done
 
+ensure_run_dir
 mount_runtime_module_prop
 start_server

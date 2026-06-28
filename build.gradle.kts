@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.android.library) apply false
 }
 
-version = "0.1.0"
+version = "0.1.1"
 
 val moduleId = "oplus_auto_dc"
 val moduleName = "OPlus Auto DC"
@@ -100,19 +100,7 @@ tasks.register<Zip>("packageMagiskModule") {
     description = "Build the flashable Magisk module zip."
 
     dependsOn(prepareMagiskModule)
-    finalizedBy("syncMagiskModuleUpdate")
     archiveFileName.set(updateZipName)
-    destinationDirectory.set(layout.projectDirectory.dir("out"))
+    destinationDirectory.set(updateDir)
     from(magiskWorkDir)
-}
-
-tasks.register<Copy>("syncMagiskModuleUpdate") {
-    group = "distribution"
-    description = "Copy the Magisk module zip and update metadata into the repository update directory."
-
-    dependsOn("packageMagiskModule", generateMagiskUpdateInfo)
-    from(layout.projectDirectory.dir("out")) {
-        include(updateZipName)
-    }
-    into(updateDir)
 }

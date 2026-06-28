@@ -10,7 +10,6 @@ import yangfentuozi.hiddenapi.compat.PowerManagerCompat
 import yangfentuozi.hiddenapi.compat.ServiceManagerCompat
 import yangfentuozi.hiddenapi.compat.SettingsProviderClient
 import yangfentuozi.hiddenapi.compat.adapter.DisplayManagerCallbackAdapter
-import yangfentuozi.oplusautodc.BuildConfig
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -98,7 +97,8 @@ class DimmingDaemon(
         }
 
         val rounded = (refreshRate * 100f).roundToInt() / 100f
-        val formattedRate = if (rounded % 1f == 0f) rounded.roundToInt().toString() else rounded.toString()
+        val formattedRate =
+            if (rounded % 1f == 0f) rounded.roundToInt().toString() else rounded.toString()
 
         val previousRefreshRate = lastObservedRefreshRate
         if (requireRefreshRateChanged &&
@@ -125,7 +125,11 @@ class DimmingDaemon(
 
         if (refreshRate <= REFRESH_LIMIT_HZ) {
             updateState(
-                if (settingsProvider.putSecureString(SETTING_KEY, EyeProtectionState.DC_STATE.value)) {
+                if (settingsProvider.putSecureString(
+                        SETTING_KEY,
+                        EyeProtectionState.DC_STATE.value
+                    )
+                ) {
                     logger.log(TAG, "restored default dimming: refresh=${formattedRate}")
                     "$scene；亮屏；调光：${EyeProtectionState.DC_STATE}；刷新率：${formattedRate}Hz；已恢复全亮度低频闪"
                 } else {
@@ -133,42 +137,18 @@ class DimmingDaemon(
                 }
             )
         } else {
-            updateState(
-                "$scene；亮屏；调光：$setting；刷新率：${formattedRate}Hz；高刷场景，保持经典低频闪"
-            )
+            updateState("$scene；亮屏；调光：$setting；刷新率：${formattedRate}Hz；高刷场景，保持经典低频闪")
         }
     }
 
     private val descriptionLineRegex = Regex("(?m)^description=.*$")
 
     private fun updateState(description: String) {
+        if (!modulePropFile.exists() || !modulePropFile.isFile) return
         runCatching {
-            modulePropFile.parentFile?.mkdirs()
-            val base = modulePropFile.takeIf { it.isFile }?.readText()?.takeIf { it.isNotBlank() }
-                ?: """
-                id=${BuildConfig.MAGISK_MODULE_ID}
-                name=${BuildConfig.MAGISK_MODULE_NAME}
-                version=${BuildConfig.MAGISK_MODULE_VERSION}
-                versionCode=${BuildConfig.MAGISK_MODULE_VERSION_CODE}
-                author=${BuildConfig.MAGISK_MODULE_AUTHOR}
-                description=daemon 等待启动；屏幕状态未知；调光：未知；刷新率：未知
-                updateJson=${BuildConfig.MAGISK_UPDATE_JSON_URL}
-                """.trimIndent()
-            val line = "description=${
-                description.replace('\n', ' ')
-                    .replace('\r', ' ')
-                    .trim()
-            }"
-            val content = if (descriptionLineRegex.containsMatchIn(base)) {
-                base.replace(descriptionLineRegex, line)
-            } else {
-                buildString {
-                    append(base.trimEnd())
-                    append('\n')
-                    appendLine(line)
-                }
-            }
-            modulePropFile.writeText(content)
+            modulePropFile.writeText(
+                modulePropFile.readText().replace(descriptionLineRegex, "description=$description")
+            )
         }
     }
 }
