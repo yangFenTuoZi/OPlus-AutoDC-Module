@@ -15,12 +15,8 @@ import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-
 private const val TAG = "DimmingDaemon"
 private const val SETTING_KEY = "display_single_pulse_eyeprotection_switch"
-private const val DEFAULT_STATE = "2"
-private const val KEEP_STATE = "1"
-private const val CLASSIC_STATE = "0"
 private const val REFRESH_LIMIT_HZ = 120.5f
 private const val EVENT_CONFIRM_DELAY_MS = 1000L
 private const val REFRESH_RATE_CHANGE_EPSILON_HZ = 0.01f
@@ -92,22 +88,17 @@ class DimmingDaemon(
             .onFailure { logger.log(TAG, "failed to read interactive state", it) }
             .getOrDefault(false)
 
-        val setting = settingsProvider.getSecureString(SETTING_KEY)
-            ?.takeIf { it in listOf(DEFAULT_STATE, KEEP_STATE, CLASSIC_STATE) }
-            ?: ""
-        val settingText = when (setting) {
-            CLASSIC_STATE -> "经典低频闪"
-            KEEP_STATE -> "系统保留状态"
-            DEFAULT_STATE -> "全亮度低频闪"
-            else -> "未知"
-        }
+        val setting = EyeProtectionState.fromValue(settingsProvider.getSecureString(SETTING_KEY))
 
         val refreshRate = DisplayManagerCompat.getDisplayInfo(Display.DEFAULT_DISPLAY)
             ?.refreshRate ?: 0f
         if (refreshRate <= 0f) {
-            updateState("$scene；亮屏；调光：$settingText；刷新率：未知；刷新率不可用，未写入设置")
+            updateState("$scene；亮屏；调光：$setting；刷新率：未知；刷新率不可用，未写入设置")
             return
         }
+
+        val rounded = (refreshRate * 100f).roundToInt() / 100f
+        val formattedRate = if (rounded % 1f == 0f) rounded.roundToInt().toString() else rounded.toString()
 
         val previousRefreshRate = lastObservedRefreshRate
         if (requireRefreshRateChanged &&
@@ -116,44 +107,39 @@ class DimmingDaemon(
         ) {
             logger.log(
                 TAG,
-                "ignored display event without refresh rate change: refresh=${formatRate(refreshRate)}"
+                "ignored display event without refresh rate change: refresh=${formattedRate}Hz"
             )
             return
         }
         lastObservedRefreshRate = refreshRate
 
         if (!interactive) {
-            updateState("$scene；息屏；调光：$settingText；刷新率：${formatRate(refreshRate)}Hz；息屏，未写入设置")
+            updateState("$scene；息屏；调光：$setting；刷新率：${formattedRate}Hz；息屏，未写入设置")
             return
         }
 
-        if (setting != CLASSIC_STATE) {
-            updateState("$scene；亮屏；调光：$settingText；刷新率：${formatRate(refreshRate)}Hz；当前无需恢复")
+        if (setting != EyeProtectionState.PWM_STATE) {
+            updateState("$scene；亮屏；调光：$setting；刷新率：${formattedRate}Hz；当前无需恢复")
             return
         }
 
         if (refreshRate <= REFRESH_LIMIT_HZ) {
             updateState(
-                if (settingsProvider.putSecureString(SETTING_KEY, DEFAULT_STATE)) {
-                    logger.log(TAG, "restored default dimming: refresh=${formatRate(refreshRate)}")
-                    "$scene；亮屏；调光：全亮度低频闪；刷新率：${formatRate(refreshRate)}Hz；已恢复全亮度低频闪"
+                if (settingsProvider.putSecureString(SETTING_KEY, EyeProtectionState.DC_STATE.value)) {
+                    logger.log(TAG, "restored default dimming: refresh=${formattedRate}")
+                    "$scene；亮屏；调光：${EyeProtectionState.DC_STATE}；刷新率：${formattedRate}Hz；已恢复全亮度低频闪"
                 } else {
-                    "$scene；亮屏；调光：经典低频闪；刷新率：${formatRate(refreshRate)}Hz；设置写入失败"
+                    "$scene；亮屏；调光：$setting；刷新率：${formattedRate}Hz；设置写入失败"
                 }
             )
         } else {
             updateState(
-                "$scene；亮屏；调光：经典低频闪；刷新率：${formatRate(refreshRate)}Hz；高刷场景，保持经典低频闪"
+                "$scene；亮屏；调光：$setting；刷新率：${formattedRate}Hz；高刷场景，保持经典低频闪"
             )
         }
     }
 
     private val descriptionLineRegex = Regex("(?m)^description=.*$")
-
-    private fun formatRate(rate: Float): String {
-        val rounded = (rate * 100f).roundToInt() / 100f
-        return if (rounded % 1f == 0f) rounded.roundToInt().toString() else rounded.toString()
-    }
 
     private fun updateState(description: String) {
         runCatching {

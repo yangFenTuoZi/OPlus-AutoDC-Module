@@ -7,7 +7,7 @@ BOOT_LOG_FILE="$RUN_DIR/boot.log"
 MODULE_PROP_FILE="$MODDIR/module.prop"
 TMP_MODULE_PROP_DIR="/tmp/oplus_auto_dc"
 RUNTIME_MODULE_PROP_FILE="$TMP_MODULE_PROP_DIR/module.prop"
-PROC_NAME="oplusautodc_deamon"
+PROC_NAME="oplusautodc_daemon"
 MAIN_CLASS="yangfentuozi.oplusautodc.daemon.Main"
 
 ensure_run_dir() {
