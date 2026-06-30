@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.android.library) apply false
 }
 
-version = "0.1.1"
+version = "0.1.2"
 
 val moduleId = "oplus_auto_dc"
 val moduleName = "OPlus Auto DC"

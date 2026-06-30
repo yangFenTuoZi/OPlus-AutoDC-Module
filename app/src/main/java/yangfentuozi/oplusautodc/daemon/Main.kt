@@ -17,15 +17,8 @@ object Main {
             ?.substringAfter("=")
             ?.takeIf { it.isNotBlank() }
             ?: "/data/adb/modules/oplus_auto_dc"
-        val runtimeModuleProp = args.firstOrNull { it.startsWith("--runtime-module-prop=") }
-            ?.substringAfter("=")
-            ?.takeIf { it.isNotBlank() }
-            ?: "/tmp/oplus_auto_dc/module.prop"
 
-        val daemon = DimmingDaemon(
-            moduleDir = File(moduleDir),
-            modulePropFile = File(runtimeModuleProp)
-        )
+        val daemon = DimmingDaemon(File(moduleDir))
         Runtime.getRuntime().addShutdownHook(Thread { daemon.stop() })
 
         daemon.start()

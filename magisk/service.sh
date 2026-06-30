@@ -4,9 +4,6 @@ MODDIR=${0%/*}
 APK="$MODDIR/daemon.apk"
 RUN_DIR="$MODDIR/run"
 BOOT_LOG_FILE="$RUN_DIR/boot.log"
-MODULE_PROP_FILE="$MODDIR/module.prop"
-TMP_MODULE_PROP_DIR="/tmp/oplus_auto_dc"
-RUNTIME_MODULE_PROP_FILE="$TMP_MODULE_PROP_DIR/module.prop"
 PROC_NAME="oplusautodc_daemon"
 MAIN_CLASS="yangfentuozi.oplusautodc.daemon.Main"
 
@@ -21,24 +18,9 @@ log_boot() {
 }
 
 mount_runtime_module_prop() {
-    [ -d "$TMP_MODULE_PROP_DIR" ] || mkdir -p "$TMP_MODULE_PROP_DIR" 2>/dev/null
-    chmod 0755 "$TMP_MODULE_PROP_DIR" 2>/dev/null
-    umount "$MODULE_PROP_FILE" 2>/dev/null
     now="$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null)"
     description="daemon 启动；屏幕状态未知；调光：未知；刷新率：未知；等待 daemon 接管；更新：$now"
-
-    if ! cp -f "$MODULE_PROP_FILE" "$RUNTIME_MODULE_PROP_FILE"; then
-        log_boot "failed to copy module.prop: $MODULE_PROP_FILE -> $RUNTIME_MODULE_PROP_FILE"
-        return 1
-    fi
-    sed -i "s|^description=.*|description=$description|" "$RUNTIME_MODULE_PROP_FILE"
-    chmod 0644 "$RUNTIME_MODULE_PROP_FILE" 2>/dev/null
-
-    if mount -o bind "$RUNTIME_MODULE_PROP_FILE" "$MODULE_PROP_FILE" 2>> "$BOOT_LOG_FILE"; then
-        log_boot "runtime module.prop mounted: $RUNTIME_MODULE_PROP_FILE -> $MODULE_PROP_FILE"
-    else
-        log_boot "failed to bind mount runtime module.prop"
-    fi
+    sed -i "s|^description=.*|description=$description|" "$MODDIR/module.prop"
 }
 
 kill_existing_server() {
@@ -70,8 +52,7 @@ start_server() {
             /system/bin \
             --nice-name="$PROC_NAME" \
             "$MAIN_CLASS" \
-            "--module-dir=$MODDIR" \
-            "--runtime-module-prop=$RUNTIME_MODULE_PROP_FILE"
+            "--module-dir=$MODDIR"
     ) >> "$BOOT_LOG_FILE" 2>&1 &
 
     server_pid=$!

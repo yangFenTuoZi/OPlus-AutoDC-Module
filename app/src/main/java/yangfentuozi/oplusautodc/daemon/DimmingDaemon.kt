@@ -22,8 +22,8 @@ private const val REFRESH_RATE_CHANGE_EPSILON_HZ = 0.01f
 
 class DimmingDaemon(
     private val moduleDir: File,
-    private val modulePropFile: File
 ) {
+    private val modulePropFile: File = File(moduleDir, "module.prop")
     private val handler = Handler(Looper.getMainLooper())
     private val logger = ModuleLogger(moduleDir)
     private val settingsProvider = SettingsProviderClient(0) { message, throwable ->
